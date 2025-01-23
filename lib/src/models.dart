@@ -1,2 +1,2 @@
 export 'models/error.dart';
-export 'models/fieldconfig.dart';
+export 'models/qrcode.dart';

@@ -8,21 +8,6 @@ class AudioPlayerController {
 
   final AudioPlayerService service;
 
-  TaskEither<String, Unit> startScanning() => TaskEither<String, Unit>.tryCatch(
-        () async {
-          await service.startScanningSound().run().then(
-                (Either<String, Unit> either) => either.match(
-                  (String error) =>
-                      debugPrint('Error starting scan sound: $error'),
-                  (_) => null,
-                ),
-              );
-          return unit;
-        },
-        (Object error, StackTrace stack) =>
-            'AudioPlayerController: Failed to start scanning: $error',
-      );
-
   TaskEither<String, Unit> onScanSuccess() => TaskEither<String, Unit>.tryCatch(
         () async {
           await service.stopSound().run();

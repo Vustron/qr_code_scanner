@@ -15,7 +15,7 @@ class AnimatedLogo extends StatelessWidget {
         width: 200,
         height: 200,
         decoration: const BoxDecoration(
-          color: Colors.black,
+          color: Colors.white,
         ),
         child: Image.asset(logo).animate().scale(
               duration: 600.ms,

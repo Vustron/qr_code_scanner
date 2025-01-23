@@ -27,6 +27,14 @@ void main() {
               DeviceOrientation.portraitDown,
             ]);
 
+            log.debug('Initializing database...');
+            await container.read(dbControllerProvider).initialize().run().then(
+                  (Either<String, Unit> either) => either.match(
+                    (String error) => throw Exception(error),
+                    (_) => log.info('Database initialized successfully'),
+                  ),
+                );
+
             FlutterError.onError = (FlutterErrorDetails details) {
               log.error(
                   'Flutter error caught', details.exception, details.stack);

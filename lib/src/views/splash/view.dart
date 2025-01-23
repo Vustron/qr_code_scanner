@@ -48,7 +48,7 @@ class SplashView extends HookConsumerWidget {
     }, const <Object?>[]);
 
     return const Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[

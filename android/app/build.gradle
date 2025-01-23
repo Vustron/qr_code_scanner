@@ -4,12 +4,12 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-// def keystoreProperties = new Properties()
-// def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
 
-// if (keystorePropertiesFile.exists()) {
-//     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-// }
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
 
 android {
     namespace = "com.vustron.qrcode_scanner"
@@ -34,9 +34,28 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+        }
+
+        debug {
+            keyAlias keystoreProperties['keyAliasDebug']
+            keyPassword keystoreProperties['keyPasswordDebug']
+            storeFile file(keystoreProperties['storeFileDebug'])
+            storePassword keystoreProperties['storePasswordDebug']
+        }
+    }
+
+     buildTypes {
         release {
             signingConfig = signingConfigs.debug
+        }
+        debug {
+             signingConfig = signingConfigs.debug
         }
     }
 }

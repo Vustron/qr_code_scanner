@@ -16,27 +16,6 @@ class AudioPlayerService {
     await audioPlayer.setVolume(1.0);
   }
 
-  TaskEither<String, Unit> startScanningSound() {
-    return TaskEither<String, Unit>.tryCatch(
-      () async {
-        debugPrint('Starting scanning sound: $scanning');
-        await audioPlayer.setReleaseMode(ReleaseMode.loop);
-        await audioPlayer.setVolume(1.0);
-
-        final AssetSource source = AssetSource(scanning);
-        debugPrint('Playing from source: ${source.path}');
-
-        await audioPlayer.play(source);
-        debugPrint('Scanning sound started');
-        return unit;
-      },
-      (Object error, StackTrace stack) {
-        debugPrint('Error playing scanning sound: $error\n$stack');
-        return 'Failed to play scanning sound: $error';
-      },
-    );
-  }
-
   TaskEither<String, Unit> successfulScanningSound() {
     return TaskEither<String, Unit>.tryCatch(
       () async {
