@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 
 class AnimatedScannerOverlay extends HookWidget {
-  const AnimatedScannerOverlay({super.key});
+  const AnimatedScannerOverlay({
+    super.key,
+    required this.qrDetected,
+  });
+
+  final bool qrDetected;
 
   @override
   Widget build(BuildContext context) {
@@ -11,35 +16,57 @@ class AnimatedScannerOverlay extends HookWidget {
       duration: const Duration(seconds: 2),
     );
 
+    final AnimationController pulseController = useAnimationController(
+      duration: const Duration(milliseconds: 1500),
+    );
+
     useEffect(() {
       scanLinePosition.repeat(reverse: true);
-      return scanLinePosition.dispose;
+      pulseController.repeat();
+      return () {
+        scanLinePosition.dispose();
+        pulseController.dispose();
+      };
     }, const <Object?>[]);
 
     return CustomPaint(
-      painter: ScannerOverlay(scanLinePosition: scanLinePosition),
+      painter: ScannerOverlay(
+        scanLinePosition: scanLinePosition,
+        pulseProgress: pulseController,
+        isDetected: qrDetected,
+      ),
       child: const SizedBox.expand(),
     );
   }
 }
 
 class ScannerOverlay extends CustomPainter {
-  const ScannerOverlay({required this.scanLinePosition})
-      : super(repaint: scanLinePosition);
+  ScannerOverlay({
+    required this.scanLinePosition,
+    required this.pulseProgress,
+    required this.isDetected,
+  }) : super(
+            repaint: Listenable.merge(
+                <Listenable?>[scanLinePosition, pulseProgress]));
 
   final Animation<double> scanLinePosition;
+  final Animation<double> pulseProgress;
+  final bool isDetected;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final Color borderColor = isDetected ? Colors.green : Colors.white;
+    final double opacity = (1 - pulseProgress.value) * 0.8;
+
     final Paint borderPaint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
+      ..color = borderColor.withOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round;
 
     const double scanAreaSize = 280.0;
     const double cornerRadius = 12.0;
-    const double cornerSize = 25.0;
+    const double cornerSize = 30.0;
 
     final Rect scanRect = Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 2),
@@ -47,40 +74,70 @@ class ScannerOverlay extends CustomPainter {
       height: scanAreaSize,
     );
 
-    // Draw scan line with glow
-    final Paint scanLinePaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[
-          Colors.white.withOpacity(0),
-          Colors.white.withOpacity(0.8),
-          Colors.white.withOpacity(0),
-        ],
-        stops: const <double>[0.0, 0.5, 1.0],
-      ).createShader(scanRect);
-
-    final double scanLineY =
-        scanRect.top + (scanRect.height * scanLinePosition.value);
-
-    // Add glow effect to scan line
-    canvas.drawLine(
-      Offset(scanRect.left + 10, scanLineY),
-      Offset(scanRect.right - 10, scanLineY),
-      Paint()
-        ..color = Colors.white.withOpacity(0.3)
-        ..strokeWidth = 5
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    final RRect roundedScanRect = RRect.fromRectAndRadius(
+      scanRect,
+      const Radius.circular(cornerRadius),
     );
 
-    canvas.drawLine(
-      Offset(scanRect.left + 10, scanLineY),
-      Offset(scanRect.right - 10, scanLineY),
-      scanLinePaint..strokeWidth = 2,
-    );
+    // Draw guidelines with grid pattern
+    final Paint guidelinePaint = Paint()
+      ..color = borderColor.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
 
-    // Draw corner markers
+    // Draw grid lines
+    const int gridLines = 4;
+    final double spacing = scanAreaSize / gridLines;
+    for (int i = 1; i < gridLines; i++) {
+      final double pos = scanRect.left + (spacing * i);
+      canvas.drawLine(
+        Offset(pos, scanRect.top),
+        Offset(pos, scanRect.bottom),
+        guidelinePaint,
+      );
+      canvas.drawLine(
+        Offset(scanRect.left, scanRect.top + (spacing * i)),
+        Offset(scanRect.right, scanRect.top + (spacing * i)),
+        guidelinePaint,
+      );
+    }
+
+    // Draw scan line with enhanced glow
+    if (!isDetected) {
+      final Paint scanLinePaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            borderColor.withOpacity(0),
+            borderColor.withOpacity(0.8),
+            borderColor.withOpacity(0),
+          ],
+          stops: const <double>[0.0, 0.5, 1.0],
+        ).createShader(scanRect);
+
+      final double scanLineY =
+          scanRect.top + (scanRect.height * scanLinePosition.value);
+
+      // Enhanced scan line glow
+      canvas.drawLine(
+        Offset(scanRect.left + 10, scanLineY),
+        Offset(scanRect.right - 10, scanLineY),
+        Paint()
+          ..color = borderColor.withOpacity(0.4)
+          ..strokeWidth = 6
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+
+      canvas.drawLine(
+        Offset(scanRect.left + 10, scanLineY),
+        Offset(scanRect.right - 10, scanLineY),
+        scanLinePaint..strokeWidth = 2,
+      );
+    }
+
+    // Complete corner markers
     final List<List<Offset>> corners = <List<Offset>>[
       // Top left
       <Offset>[
@@ -112,20 +169,34 @@ class ScannerOverlay extends CustomPainter {
       ],
     ];
 
-    // Draw glow behind corners
+    // Draw corner glows and borders
     final Paint glowPaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..strokeWidth = 6
+      ..color = borderColor.withOpacity(opacity)
+      ..strokeWidth = 8
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     for (final List<Offset> corner in corners) {
       canvas.drawPoints(PointMode.lines, corner, glowPaint);
       canvas.drawPoints(PointMode.lines, corner, borderPaint);
     }
+
+    // Enhanced success indicator
+    if (isDetected) {
+      canvas.drawRRect(
+        roundedScanRect,
+        Paint()
+          ..color = Colors.green.withOpacity(0.2)
+          ..style = PaintingStyle.fill
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant ScannerOverlay oldDelegate) =>
-      oldDelegate.scanLinePosition != scanLinePosition;
+  bool shouldRepaint(covariant ScannerOverlay oldDelegate) {
+    return oldDelegate.scanLinePosition != scanLinePosition ||
+        oldDelegate.pulseProgress != pulseProgress ||
+        oldDelegate.isDetected != isDetected;
+  }
 }

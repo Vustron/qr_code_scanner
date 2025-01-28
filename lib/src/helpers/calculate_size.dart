@@ -29,15 +29,15 @@ double calculateScannerSize(List<Offset> corners) {
   double minY = double.infinity;
   double maxY = -double.infinity;
 
-  for (final corner in corners) {
+  for (final Offset corner in corners) {
     minX = min(minX, corner.dx);
     maxX = max(maxX, corner.dx);
     minY = min(minY, corner.dy);
     maxY = max(maxY, corner.dy);
   }
 
-  final width = maxX - minX;
-  final height = maxY - minY;
+  final double width = maxX - minX;
+  final double height = maxY - minY;
 
   return max(width, height) * 1.2;
 }

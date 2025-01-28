@@ -131,8 +131,10 @@ class HomeView extends HookConsumerWidget {
                   scannerController: scannerController,
                   onDetect: onDetect,
                 ),
-                const Center(
-                  child: AnimatedScannerOverlay(),
+                Center(
+                  child: AnimatedScannerOverlay(
+                    qrDetected: qrDetected.value,
+                  ),
                 ),
                 const About(),
               ] else ...<Widget>[
