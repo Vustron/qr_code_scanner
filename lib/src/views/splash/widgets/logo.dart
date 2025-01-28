@@ -10,8 +10,8 @@ class SplashLogo extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Container(
-          width: 200,
-          height: 200,
+          width: 150,
+          height: 150,
           decoration: const BoxDecoration(
             color: Colors.white,
           ),
@@ -20,7 +20,7 @@ class SplashLogo extends StatelessWidget {
         const SizedBox(height: 24),
         const CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-          strokeWidth: 2,
+          strokeWidth: 8,
         ),
       ],
     );

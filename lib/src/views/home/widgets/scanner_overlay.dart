@@ -87,7 +87,7 @@ class ScannerOverlay extends CustomPainter {
 
     // Draw grid lines
     const int gridLines = 4;
-    final double spacing = scanAreaSize / gridLines;
+    const double spacing = scanAreaSize / gridLines;
     for (int i = 1; i < gridLines; i++) {
       final double pos = scanRect.left + (spacing * i);
       canvas.drawLine(
