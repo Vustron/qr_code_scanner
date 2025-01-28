@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:qrcode_scanner/src/controllers.dart';
 import 'package:qrcode_scanner/src/providers.dart';
 import 'package:qrcode_scanner/src/models.dart';
 import 'package:qrcode_scanner/src/views.dart';
@@ -12,13 +13,16 @@ class QrList extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<QRCode>> qrCodes = ref.watch(qrHistoryProvider);
-
+    final AsyncValue<List<QRCode>> qrCodes =
+        ref.watch(qrHistoryNotifierProvider);
+    final QRCodeController qr = ref.watch(qrCodeControllerProvider);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: const QrListAppBar(),
       body: RefreshIndicator(
-        onRefresh: () async => ref.refresh(qrHistoryProvider),
+        onRefresh: () async {
+          await ref.read(qrHistoryNotifierProvider.notifier).refresh();
+        },
         child: qrCodes.when(
           data: (List<QRCode> codes) {
             if (codes.isEmpty) {
@@ -62,11 +66,7 @@ class QrList extends HookConsumerWidget {
                   ),
                   direction: DismissDirection.endToStart,
                   onDismissed: (_) async {
-                    await ref
-                        .read(dbControllerProvider)
-                        .deleteQRCode(code.id)
-                        .run()
-                        .then(
+                    await qr.deleteQRCode(code.id).run().then(
                           (Either<String, Unit> either) => either.match(
                             (String error) => ref
                                 .read(toasterProvider)
@@ -78,8 +78,6 @@ class QrList extends HookConsumerWidget {
                                 )
                                 .run(),
                             (_) async {
-                              // ignore: unused_result
-                              await ref.refresh(qrHistoryProvider.future);
                               if (!context.mounted) return;
                               ref
                                   .read(toasterProvider)

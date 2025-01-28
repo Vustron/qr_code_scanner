@@ -2,8 +2,10 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:qrcode_scanner/src/controllers/qr_code_controller.dart';
 
 import 'package:qrcode_scanner/src/providers.dart';
+import 'package:qrcode_scanner/src/models.dart';
 
 class QrListAppBar extends HookConsumerWidget implements PreferredSizeWidget {
   const QrListAppBar({super.key});
@@ -13,6 +15,9 @@ class QrListAppBar extends HookConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<List<QRCode>> qrHistory =
+        ref.watch(qrHistoryNotifierProvider);
+    final QRCodeController qr = ref.watch(qrCodeControllerProvider);
     return AppBar(
       title: const Text(
         'Saved QR List',
@@ -31,40 +36,37 @@ class QrListAppBar extends HookConsumerWidget implements PreferredSizeWidget {
         onPressed: () => Navigator.pop(context),
       ),
       actions: <Widget>[
-        IconButton(
-          icon: const Icon(
-            FluentIcons.delete_24_regular,
-            color: Colors.white70,
-          ),
-          onPressed: () {
-            ref.read(dbControllerProvider).deleteAllQRCodes().run().then(
-                  (Either<String, Unit> either) => either.match(
-                    (String error) => ref
-                        .read(toasterProvider)
-                        .show(
-                          context: context,
-                          title: 'Error',
-                          message: error,
-                          type: 'error',
-                        )
-                        .run(),
-                    (_) async {
-                      // ignore: unused_result
-                      await ref.refresh(qrHistoryProvider.future);
-                      if (!context.mounted) return;
-                      ref
-                          .read(toasterProvider)
-                          .show(
-                            context: context,
-                            title: 'Success',
-                            message: 'All QR codes deleted',
-                            type: 'success',
-                          )
-                          .run();
-                    },
+        qrHistory.when(
+          data: (List<QRCode> qrCodes) => qrCodes.isEmpty
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: const Icon(
+                    FluentIcons.delete_24_regular,
+                    color: Colors.white70,
                   ),
-                );
-          },
+                  onPressed: () {
+                    qr.deleteAllQRCodes().run().then(
+                          (Either<String, Unit> either) => either.match(
+                            (String error) => ref.read(toasterProvider).show(
+                                  context: context,
+                                  title: 'Error',
+                                  message: error,
+                                  type: 'error',
+                                ),
+                            (_) {
+                              ref.read(toasterProvider).show(
+                                    context: context,
+                                    title: 'Success',
+                                    message: 'All QR codes deleted',
+                                    type: 'success',
+                                  );
+                            },
+                          ),
+                        );
+                  },
+                ),
+          error: (_, __) => const SizedBox.shrink(),
+          loading: () => const SizedBox.shrink(),
         ),
       ],
     );

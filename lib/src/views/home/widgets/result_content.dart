@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:qrcode_scanner/src/controllers.dart';
 import 'package:qrcode_scanner/src/providers.dart';
 import 'package:qrcode_scanner/src/helpers.dart';
 import 'package:qrcode_scanner/src/views.dart';
@@ -21,7 +22,7 @@ class ResultContent extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ValueNotifier<bool> isSaved = useState(false);
-
+    final QRCodeController qr = ref.watch(qrCodeControllerProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(13),
@@ -77,41 +78,37 @@ class ResultContent extends HookConsumerWidget {
                 onPressed: () {
                   if (isSaved.value) return;
                   HapticFeedback.lightImpact();
-                  ref
-                      .read(dbControllerProvider)
-                      .saveQRCode(result)
-                      .run()
-                      .then<Either<String, Unit>>(
-                          (Either<String, Unit> either) => either.match(
-                                (String error) async {
-                                  await ref
-                                      .read(toasterProvider)
-                                      .show(
-                                        context: context,
-                                        title: 'Error',
-                                        message: error,
-                                        type: 'error',
-                                      )
-                                      .run();
-                                  return either;
-                                },
-                                (_) async {
-                                  isSaved.value = true;
-                                  ref
-                                      .read(qrHistoryNotifierProvider.notifier)
-                                      .refresh();
-                                  await ref
-                                      .read(toasterProvider)
-                                      .show(
-                                        context: context,
-                                        title: 'Success',
-                                        message: 'QR Code saved',
-                                        type: 'success',
-                                      )
-                                      .run();
-                                  return either;
-                                },
-                              ));
+                  qr.saveQRCode(result).run().then<Either<String, Unit>>(
+                      (Either<String, Unit> either) => either.match(
+                            (String error) async {
+                              await ref
+                                  .read(toasterProvider)
+                                  .show(
+                                    context: context,
+                                    title: 'Error',
+                                    message: error,
+                                    type: 'error',
+                                  )
+                                  .run();
+                              return either;
+                            },
+                            (_) async {
+                              isSaved.value = true;
+                              ref
+                                  .read(qrHistoryNotifierProvider.notifier)
+                                  .refresh();
+                              await ref
+                                  .read(toasterProvider)
+                                  .show(
+                                    context: context,
+                                    title: 'Success',
+                                    message: 'QR Code saved',
+                                    type: 'success',
+                                  )
+                                  .run();
+                              return either;
+                            },
+                          ));
                 },
               ),
               const SizedBox(width: 5),

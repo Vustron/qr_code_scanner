@@ -2,12 +2,12 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:qrcode_scanner/src/providers.dart';
 import 'package:qrcode_scanner/src/helpers.dart';
 import 'package:qrcode_scanner/src/models.dart';
 import 'package:qrcode_scanner/src/views.dart';
-import 'package:share_plus/share_plus.dart';
 
 class QrListItem extends HookConsumerWidget {
   const QrListItem({
@@ -19,6 +19,8 @@ class QrListItem extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bool isEdited = code.updatedAt.millisecondsSinceEpoch !=
+        code.scannedAt.millisecondsSinceEpoch;
     return Card(
       color: Colors.white10,
       margin: const EdgeInsets.only(bottom: 12),
@@ -33,10 +35,19 @@ class QrListItem extends HookConsumerWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(9),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              Text(
+                formatLabel(code.label),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 4),
               Row(
                 children: <Widget>[
                   Icon(
@@ -58,19 +69,52 @@ class QrListItem extends HookConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Text(
-                    getRelativeTime(code.scannedAt),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Scanned ${getRelativeTime(code.scannedAt)}',
+                      style: TextStyle(
+                        color: Colors.green.shade200,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 3),
+                  if (isEdited) ...<Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Edited ${getRelativeTime(code.updatedAt)}',
+                        style: TextStyle(
+                          color: Colors.blue.shade200,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
+                      // Share button
                       IconButton(
                         icon: const Icon(
                           FluentIcons.share_24_regular,
@@ -107,6 +151,8 @@ class QrListItem extends HookConsumerWidget {
                           });
                         },
                       ),
+
+                      // Edit button
                       IconButton(
                         icon: const Icon(
                           FluentIcons.edit_24_regular,
@@ -123,6 +169,8 @@ class QrListItem extends HookConsumerWidget {
                           );
                         },
                       ),
+
+                      // Copy button
                       IconButton(
                         icon: const Icon(
                           FluentIcons.copy_24_regular,
@@ -130,9 +178,7 @@ class QrListItem extends HookConsumerWidget {
                           size: 20,
                         ),
                         onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(text: code.rawValue),
-                          );
+                          Clipboard.setData(ClipboardData(text: code.rawValue));
                           ref
                               .read(toasterProvider)
                               .show(

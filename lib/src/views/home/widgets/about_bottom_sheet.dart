@@ -9,16 +9,19 @@ class AboutBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    final double bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: size.height * 0.40,
-        minHeight: size.height * 0.40,
+        maxHeight: size.height * 0.50,
         maxWidth: size.width * 1,
         minWidth: size.width * 1,
       ),
-      padding: EdgeInsets.only(bottom: bottomPadding),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 16,
+        right: 16,
+        top: 16,
+      ),
       decoration: BoxDecoration(
         color: Colors.grey.shade900,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -73,7 +76,7 @@ class AboutBottomSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 60),
         ],
       ),
     );

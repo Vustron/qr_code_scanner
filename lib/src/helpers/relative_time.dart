@@ -10,3 +10,21 @@ String getRelativeTime(DateTime dateTime) {
     return 'Just now';
   }
 }
+
+String formatLabel(String isoDateWithUuid) {
+  try {
+    final List<String> parts = isoDateWithUuid.split('Z');
+    if (parts.length < 2) return isoDateWithUuid;
+
+    final DateTime date = DateTime.parse('${parts[0]}Z').toLocal();
+    final String formattedDate = '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}-'
+        '${date.year}';
+
+    final String uuid = parts[1].substring(0, 10);
+
+    return '$formattedDate-$uuid';
+  } catch (_) {
+    return isoDateWithUuid;
+  }
+}

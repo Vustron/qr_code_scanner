@@ -28,12 +28,7 @@ void main() {
             ]);
 
             log.debug('Initializing database...');
-            await container.read(dbControllerProvider).initialize().run().then(
-                  (Either<String, Unit> either) => either.match(
-                    (String error) => throw Exception(error),
-                    (_) => log.info('Database initialized successfully'),
-                  ),
-                );
+            await container.read(dbInitProvider.future);
 
             FlutterError.onError = (FlutterErrorDetails details) {
               log.error(
@@ -57,7 +52,12 @@ void main() {
             };
 
             log.info('Starting app...');
-            runApp(ProviderScope(child: App()));
+            runApp(
+              ProviderScope(
+                parent: container,
+                child: App(),
+              ),
+            );
             return unit;
           },
           (Object error, StackTrace stack) =>

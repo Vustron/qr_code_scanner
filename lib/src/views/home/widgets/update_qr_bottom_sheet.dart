@@ -3,9 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:qrcode_scanner/src/helpers.dart';
 
+import 'package:qrcode_scanner/src/controllers.dart';
 import 'package:qrcode_scanner/src/providers.dart';
+import 'package:qrcode_scanner/src/helpers.dart';
 import 'package:qrcode_scanner/src/models.dart';
 
 class UpdateQRBottomSheet extends HookConsumerWidget {
@@ -20,7 +21,10 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final TextEditingController controller =
         useTextEditingController(text: qrCode.rawValue);
+    final TextEditingController labelController =
+        useTextEditingController(text: qrCode.label);
     final ValueNotifier<bool> isLoading = useState(false);
+    final QRCodeController qr = ref.watch(qrCodeControllerProvider);
 
     return Container(
       padding: EdgeInsets.only(
@@ -55,6 +59,37 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
           ),
           const SizedBox(height: 24),
           TextField(
+            controller: labelController,
+            enabled: !isLoading.value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Enter label',
+              hintStyle: const TextStyle(color: Colors.white54),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.white),
+              ),
+              prefixIcon: const Icon(
+                FluentIcons.tag_24_regular,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
             controller: controller,
             enabled: !isLoading.value,
             style: const TextStyle(
@@ -86,7 +121,7 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
           ),
           const SizedBox(height: 24),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               TextButton.icon(
                 onPressed:
@@ -103,7 +138,7 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: 40,
                     vertical: 12,
                   ),
                   side: const BorderSide(color: Colors.white24),
@@ -134,43 +169,38 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
 
                         final QRCode updatedQRCode = qrCode.copyWith(
                           rawValue: controller.text,
+                          label: labelController.text,
+                          updatedAt: DateTime.now(),
                         );
 
-                        await ref
-                            .read(dbControllerProvider)
-                            .updateQRCode(updatedQRCode)
-                            .run()
-                            .then((Either<String, Unit> either) => either.match(
-                                  (String error) {
-                                    isLoading.value = false;
-                                    ref
-                                        .read(toasterProvider)
-                                        .show(
-                                          context: context,
-                                          title: 'Error',
-                                          message: error,
-                                          type: 'error',
-                                        )
-                                        .run();
-                                  },
-                                  (_) {
-                                    ref
-                                        .read(
-                                            qrHistoryNotifierProvider.notifier)
-                                        .refresh();
-                                    Navigator.pop(context);
-                                    ref
-                                        .read(toasterProvider)
-                                        .show(
-                                          context: context,
-                                          title: 'Success',
-                                          message:
-                                              'QR Code updated successfully',
-                                          type: 'success',
-                                        )
-                                        .run();
-                                  },
-                                ));
+                        await qr.updateQRCode(updatedQRCode).run().then(
+                              (Either<String, Unit> either) => either.match(
+                                (String error) {
+                                  isLoading.value = false;
+                                  ref
+                                      .read(toasterProvider)
+                                      .show(
+                                        context: context,
+                                        title: 'Error',
+                                        message: error,
+                                        type: 'error',
+                                      )
+                                      .run();
+                                },
+                                (_) {
+                                  Navigator.pop(context);
+                                  ref
+                                      .read(toasterProvider)
+                                      .show(
+                                        context: context,
+                                        title: 'Success',
+                                        message: 'QR Code updated successfully',
+                                        type: 'success',
+                                      )
+                                      .run();
+                                },
+                              ),
+                            );
                       },
                 icon: isLoading.value
                     ? Container(
@@ -189,13 +219,13 @@ class UpdateQRBottomSheet extends HookConsumerWidget {
                         color: Colors.white,
                       ),
                 label: Text(
-                  isLoading.value ? 'Updating...' : 'Update',
+                  isLoading.value ? '...' : 'Update',
                 ),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   backgroundColor: Colors.white10,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: 40,
                     vertical: 12,
                   ),
                   shape: RoundedRectangleBorder(
