@@ -18,3 +18,5 @@ export 'views/home/widgets/qr_list_error.dart';
 export 'views/home/widgets/update_qr_bottom_sheet.dart';
 export 'views/home/widgets/home_appbar.dart';
 export 'views/home/widgets/about_bottom_sheet.dart';
+export 'views/home/widgets/qr_scanner.dart';
+export 'views/home/widgets/about.dart';

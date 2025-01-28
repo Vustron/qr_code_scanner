@@ -52,7 +52,7 @@ class SplashView extends HookConsumerWidget {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          AnimatedLogo(),
+          SplashLogo(),
         ],
       ),
     );

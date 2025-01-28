@@ -16,6 +16,8 @@ class HomeView extends HookConsumerWidget {
     final ValueNotifier<String?> scanResult = useState<String?>(null);
     final ValueNotifier<bool> torchEnabled = useState(false);
     final ValueNotifier<UniqueKey> scannerKey = useState(UniqueKey());
+    final ValueNotifier<bool> qrDetected = useState(false);
+    final ValueNotifier<Barcode?> currentBarcode = useState<Barcode?>(null);
 
     final MobileScannerController scannerController = useMemoized(
       () => MobileScannerController(
@@ -46,13 +48,26 @@ class HomeView extends HookConsumerWidget {
       await barcodeOption.match(
         () => null,
         (Barcode barcode) async {
+          currentBarcode.value = barcode;
+          qrDetected.value = barcode.corners.isNotEmpty;
+
           await ref
               .read(audioPlayerControllerProvider)
               .onScanSuccess()
               .run()
               .then((Either<String, Unit> either) => either.match(
-                    (String error) =>
-                        debugPrint('Error on scan success: $error'),
+                    (String error) async {
+                      if (!context.mounted) return;
+                      await ref
+                          .read(toasterProvider)
+                          .show(
+                            context: context,
+                            title: 'Error',
+                            message: error,
+                            type: 'error',
+                          )
+                          .run();
+                    },
                     (_) => null,
                   ));
 
@@ -60,13 +75,15 @@ class HomeView extends HookConsumerWidget {
           scanResult.value = barcode.rawValue;
         },
       );
-    }, <Object?>[showScanner, scanResult]);
+    }, <Object?>[showScanner, scanResult, qrDetected, currentBarcode]);
 
     final Null Function() onScanAgain = useCallback(() {
       scannerKey.value = UniqueKey();
       showScanner.value = true;
       scanResult.value = null;
       torchEnabled.value = false;
+      qrDetected.value = false;
+      currentBarcode.value = null;
     }, const <Object?>[]);
 
     return Scaffold(
@@ -109,133 +126,15 @@ class HomeView extends HookConsumerWidget {
             key: ValueKey<bool>(showScanner.value),
             children: <Widget>[
               if (showScanner.value) ...<Widget>[
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      margin: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: MobileScanner(
-                          key: scannerKey.value,
-                          controller: scannerController,
-                          onDetect: onDetect,
-                          errorBuilder: (BuildContext context,
-                              MobileScannerException error, Widget? child) {
-                            return const ColoredBox(
-                              color: Colors.black,
-                              child: Center(
-                                child: Text(
-                                  'Camera error',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+                QRScanner(
+                  scannerKey: scannerKey,
+                  scannerController: scannerController,
+                  onDetect: onDetect,
                 ),
                 const Center(
                   child: AnimatedScannerOverlay(),
                 ),
-                SafeArea(
-                  child: Column(
-                    children: <Widget>[
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 10),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 32),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.white24),
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Icon(
-                                Icons.qr_code_scanner,
-                                color: Colors.white.withOpacity(0.9),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Position QR code within frame to scan',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  letterSpacing: 0.5,
-                                  fontWeight: FontWeight.w500,
-                                  shadows: <Shadow>[
-                                    Shadow(
-                                      color: Colors.black54,
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          showModalBottomSheet<void>(
-                            context: context,
-                            backgroundColor: Colors.transparent,
-                            isScrollControlled: true,
-                            builder: (BuildContext context) =>
-                                const AboutBottomSheet(),
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 24),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Made by Vustron',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              letterSpacing: 1,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const About(),
               ] else ...<Widget>[
                 ResultView(
                   result: scanResult.value!,
