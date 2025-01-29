@@ -43,7 +43,7 @@ class HomeAppBar extends HookConsumerWidget implements PreferredSizeWidget {
       leading: showScanner.value
           ? IconButton(
               icon: const Icon(
-                FluentIcons.list_24_regular,
+                FluentIcons.save_arrow_right_24_filled,
                 color: Colors.white,
               ),
               onPressed: () {

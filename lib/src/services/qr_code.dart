@@ -62,7 +62,7 @@ class QRCodeService {
                 orderBy: 'scanned_at DESC',
               );
               return maps.map((Map<String, Object?> map) {
-                return QRCode.fromJson({
+                return QRCode.fromJson(<String, Object>{
                   'id': map['id']?.toString() ?? '',
                   'label': map['label']?.toString() ??
                       map['raw_value']?.toString() ??
